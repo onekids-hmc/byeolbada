@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>별바다</title>
+<meta name="description" content="아이들이 모은 별빛을 기록하는 바다">
+<meta name="theme-color" content="#0d1440">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="별바다">
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    min-height: 100vh; min-height: 100dvh;
+    background: #070b24;
+    font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
+    color: #fff;
+    overscroll-behavior-y: contain;
+  }
+  button { font-family: inherit; cursor: pointer; border: none; background: none; padding: 0; color: inherit; }
+  input { font-family: inherit; }
+  input::placeholder { color: rgba(255,255,255,0.35); }
+
+  /* ── background: sea of stars ── */
+  #bg { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 0;
+    background: linear-gradient(180deg,#070b24 0%,#0d1440 45%,#15214f 70%,#0e2a4c 100%); }
+  .ss-tw { position: absolute; background: #fff; border-radius: 9999px;
+    box-shadow: 0 0 6px rgba(255,255,255,0.8); animation: ssTwinkle ease-in-out infinite; }
+  @keyframes ssTwinkle { 0%,100% { opacity:.15; transform:scale(.8); } 50% { opacity:1; transform:scale(1.2); } }
+  .ss-shoot { position: absolute; width: 90px; height: 2px; border-radius: 2px;
+    background: linear-gradient(90deg, rgba(255,255,255,0), #fff); opacity: 0; animation: ssShoot 8s ease-in infinite; }
+  @keyframes ssShoot {
+    0% { opacity:0; transform:rotate(-35deg) translateX(0); }
+    3% { opacity:1; }
+    11% { opacity:0; transform:rotate(-35deg) translateX(-260px); }
+    100% { opacity:0; transform:rotate(-35deg) translateX(-260px); } }
+  .ss-moon { position: absolute; top: 5%; right: -70px; width: 230px; height: 230px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,232,160,0.15) 0%, rgba(255,232,160,0) 70%); }
+  .ss-wave { position: absolute; bottom: 34px; left: 0; width: 200%; height: 60px; opacity: .55;
+    animation: ssDrift 14s linear infinite; }
+  .ss-wave2 { position: absolute; bottom: 0; left: 0; width: 200%; height: 84px;
+    animation: ssDrift 19s linear infinite reverse; }
+  @keyframes ssDrift { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  .ss-deep { position: absolute; bottom: 0; left: 0; right: 0; height: 110px;
+    background: linear-gradient(180deg, rgba(10,20,52,0) 0%, rgba(9,26,58,0.55) 60%, rgba(8,28,60,0.82) 100%); }
+
+  /* ── layout ── */
+  #app { position: relative; z-index: 1; max-width: 430px; margin: 0 auto;
+    padding: env(safe-area-inset-top) 16px calc(96px + env(safe-area-inset-bottom));
+    min-height: 100vh; min-height: 100dvh; }
+  .center-page { min-height: 92vh; min-height: 92dvh; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; }
+
+  /* ── shared pieces ── */
+  .card { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.14);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-radius: 18px; }
+  .input { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18);
+    color: #fff; outline: none; border-radius: 12px; font-size: 15px; padding: 12px 14px; width: 100%; }
+  .input:focus { border-color: rgba(255,215,106,0.55); }
+  .btn { border-radius: 12px; font-weight: 700; transition: transform .12s ease; }
+  .btn:active { transform: scale(.95); }
+  .btn-gold { background: linear-gradient(135deg,#ffe9a3,#ffc63f); color: #4a3200;
+    box-shadow: 0 4px 18px rgba(255,198,63,0.30); }
+  .btn-ghost { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.16);
+    color: rgba(255,255,255,0.88); }
+  .btn-danger { background: #f87171; color: #450a0a; }
+  .icon-btn { padding: 8px; color: rgba(255,255,255,0.5); display: inline-flex; }
+  .row { display: flex; align-items: center; }
+  .muted { color: rgba(255,255,255,0.55); }
+
+  .ss-float { animation: ssFloat 3.5s ease-in-out infinite; }
+  @keyframes ssFloat { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-6px); } }
+  .logo-wrap { position: relative; display: inline-flex; align-items: center; justify-content: center; }
+  .logo-star { filter: drop-shadow(0 0 16px rgba(255,215,106,0.8)); }
+  .logo-spark { position: absolute; top: -6px; right: -8px; }
+
+  /* ── auth ── */
+  .auth-title { font-size: 34px; font-weight: 800; letter-spacing: .28em; padding-left: .28em;
+    margin: 12px 0 4px; text-shadow: 0 0 24px rgba(255,215,106,0.35); }
+  .auth-sub { color: rgba(255,255,255,0.55); font-size: 13px; margin-bottom: 26px; }
+  .auth-card { width: 100%; max-width: 340px; padding: 20px; border-radius: 22px; }
+  .tabbar { display: flex; background: rgba(0,0,0,0.25); border-radius: 12px; padding: 4px; margin-bottom: 16px; }
+  .tab { flex: 1; border-radius: 9px; padding: 9px 0; font-weight: 700; font-size: 14px;
+    color: rgba(255,255,255,0.6); }
+  .tab.on { background: rgba(255,215,106,0.9); color: #4a3200; }
+  .err { color: #fda4af; font-size: 13px; margin: 2px 0 8px; min-height: 0; }
+  .hint { text-align: center; margin-top: 12px; color: rgba(255,255,255,0.45); font-size: 12px; }
+
+  /* ── header ── */
+  .hdr { display: flex; align-items: center; justify-content: space-between; padding: 18px 0 14px; }
+  .hdr-title { font-size: 20px; font-weight: 800; }
+  .user-chip { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.75); font-size: 11px;
+    font-weight: 600; border-radius: 999px; padding: 5px 10px; max-width: 96px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* ── home ── */
+  .action-row { display: flex; gap: 8px; margin-bottom: 16px; }
+  .action-row .btn { flex: 1; padding: 13px 0; font-size: 15px; display: flex;
+    align-items: center; justify-content: center; gap: 6px; }
+  .group-card { padding: 15px 16px; margin-bottom: 10px; }
+  .group-name { font-size: 17px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .group-sub { display: flex; gap: 12px; margin-top: 5px; color: rgba(255,255,255,0.55); font-size: 12px; }
+  .group-sub span { display: inline-flex; align-items: center; gap: 4px; }
+  .empty { padding: 34px 22px; text-align: center; border-radius: 22px; }
+  .empty-t { font-weight: 700; font-size: 16px; margin: 10px 0 4px; }
+  .empty-s { color: rgba(255,255,255,0.5); font-size: 13px; }
+
+  /* ── group ── */
+  .g-hdr { display: flex; align-items: center; padding: 18px 0 10px; gap: 2px; }
+  .g-title { font-size: 20px; font-weight: 800; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; min-width: 0; }
+  .total-chip { display: inline-flex; align-items: center; gap: 4px; margin-left: auto;
+    background: rgba(255,215,106,0.12); color: #ffe9a3; font-size: 12px; font-weight: 700;
+    border-radius: 999px; padding: 5px 10px; flex: none; }
+  .add-row { padding: 12px; margin-bottom: 12px; display: flex; gap: 8px; align-items: center; }
+  .add-row .input { flex: 1; min-width: 0; padding: 11px 12px; font-size: 14px; }
+  .add-row .btn-gold { padding: 11px 14px; font-size: 13px; display: inline-flex;
+    align-items: center; gap: 4px; flex: none; }
+
+  .kid-card { padding: 12px 12px 12px 14px; margin-bottom: 10px; display: flex;
+    align-items: center; justify-content: space-between; gap: 8px; }
+  .kid-left { min-width: 0; flex: 1; }
+  .kid-name-row { display: flex; align-items: center; gap: 5px; }
+  .kid-name { font-size: 15px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .gb-row { display: flex; align-items: center; gap: 4px; margin-top: 5px; }
+  .gb-row svg { flex: none; }
+  .gb-label { color: #ffe9a3; font-size: 11px; font-weight: 700; }
+  .gb-bar { height: 3px; width: 108px; background: rgba(255,255,255,0.10); border-radius: 99px; margin-top: 5px; }
+  .gb-fill { height: 3px; border-radius: 99px; background: linear-gradient(90deg,#8ea6ff,#ffd76a);
+    transition: width .4s; }
+  .gb-next { color: rgba(255,255,255,0.45); font-size: 10px; margin-top: 3px; }
+
+  .ctrl { display: flex; align-items: center; gap: 6px; flex: none; }
+  .stars-input { width: 54px; text-align: center; font-weight: 800; font-size: 17px;
+    color: #ffd76a; background: rgba(0,0,0,0.28); border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 12px; padding: 9px 2px; outline: none; }
+  .stars-input:focus { border-color: rgba(255,215,106,0.55); }
+
+  /* ── burst buttons ── */
+  .fxwrap { position: relative; width: 42px; height: 42px; flex: none; }
+  .bump { width: 100%; height: 100%; border-radius: 999px; display: flex; align-items: center;
+    justify-content: center; transition: transform .1s ease; }
+  .bump:active { transform: scale(.88); }
+  .bump.plus { background: linear-gradient(135deg,#ffe9a3,#ffc63f); color: #4a3200;
+    border: 1px solid rgba(255,222,140,0.9); box-shadow: 0 0 14px rgba(255,205,80,0.35); }
+  .bump.minus { background: rgba(129,140,248,0.16); color: #c7d2fe;
+    border: 1px solid rgba(148,163,184,0.35); }
+  .bump:disabled { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.22);
+    border: 1px solid rgba(255,255,255,0.08); box-shadow: none; cursor: default; }
+  .fxlayer { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
+  .ss-p-burst { position: absolute; color: #ffd76a; text-shadow: 0 0 8px rgba(255,215,106,0.95);
+    animation: ssBurst .72s ease-out forwards; line-height: 1; }
+  @keyframes ssBurst {
+    0% { transform: translate(-50%,-50%) scale(.3) rotate(0deg); opacity: 1; }
+    55% { opacity: 1; }
+    100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.05) rotate(130deg); opacity: 0; } }
+  .ss-p-fade { position: absolute; color: #94a7cc; text-shadow: 0 0 6px rgba(148,167,204,0.6);
+    animation: ssFade .62s ease-in forwards; line-height: 1; }
+  @keyframes ssFade {
+    0% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1); opacity: .95; }
+    100% { transform: translate(-50%,-50%) scale(0); opacity: 0; filter: blur(2px); } }
+  .ss-ring { position: absolute; left: 50%; top: 50%; width: 42px; height: 42px;
+    margin: -21px 0 0 -21px; border-radius: 999px; animation: ssRing .55s ease-out forwards; }
+  .ss-ring.plus { border: 2px solid rgba(255,215,106,0.85); box-shadow: 0 0 18px rgba(255,215,106,0.55); }
+  .ss-ring.minus { border: 2px solid rgba(129,140,248,0.5); }
+  @keyframes ssRing { 0% { transform: scale(.7); opacity: 1; } 100% { transform: scale(1.9); opacity: 0; } }
+
+  /* ── ranking ── */
+  .rank-card { padding: 12px 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; }
+  .rank-no { width: 38px; display: flex; align-items: center; justify-content: center; flex: none;
+    color: rgba(255,255,255,0.45); font-weight: 800; font-size: 15px; }
+  .rank-mid { flex: 1; min-width: 0; }
+  .rank-name { font-size: 15px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rank-sub { color: rgba(255,255,255,0.45); font-size: 11px; margin-top: 1px; }
+  .rank-stars { display: flex; align-items: center; gap: 4px; flex: none; }
+  .rank-stars b { color: #ffd76a; font-size: 18px; font-weight: 800; }
+  .t1 { color: #ffd54a; } .t2 { color: #ccd6e8; } .t3 { color: #e0975f; }
+  .rank-card.t1c { border-color: rgba(255,213,74,0.4);
+    background: linear-gradient(135deg, rgba(255,213,74,0.13), rgba(255,255,255,0.05)); }
+  .rank-card.t2c { border-color: rgba(204,214,232,0.4);
+    background: linear-gradient(135deg, rgba(204,214,232,0.13), rgba(255,255,255,0.05)); }
+  .rank-card.t3c { border-color: rgba(224,151,95,0.4);
+    background: linear-gradient(135deg, rgba(224,151,95,0.13), rgba(255,255,255,0.05)); }
+  .trophy-glow { filter: drop-shadow(0 0 6px currentColor); }
+
+  /* ── modal & toast ── */
+  #modal { position: fixed; inset: 0; z-index: 50; display: none; align-items: center;
+    justify-content: center; padding: 24px; background: rgba(4,8,26,0.72);
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+  #modal.show { display: flex; }
+  .modal-box { width: 100%; max-width: 320px; padding: 20px; border-radius: 22px;
+    background: rgba(17,24,64,0.96); border: 1px solid rgba(255,255,255,0.14); }
+  .modal-t { font-size: 16px; font-weight: 800; margin-bottom: 4px; }
+  .modal-m { color: rgba(255,255,255,0.6); font-size: 13px; margin-bottom: 16px; word-break: break-all; }
+  .modal-btns { display: flex; gap: 8px; }
+  .modal-btns .btn { flex: 1; padding: 11px 0; font-size: 14px; }
+  #toast { position: fixed; left: 50%; bottom: calc(28px + env(safe-area-inset-bottom));
+    transform: translateX(-50%); z-index: 60; background: rgba(17,24,64,0.95);
+    border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 13px; font-weight: 600;
+    padding: 10px 18px; border-radius: 999px; opacity: 0; pointer-events: none;
+    transition: opacity .25s; max-width: 86vw; text-align: center; }
+  #toast.show { opacity: 1; }
+
+  .footer { text-align: center; margin-top: 40px; color: rgba(255,255,255,0.28);
+    font-size: 11px; letter-spacing: .1em; }
+  .seg-note { color: rgba(255,255,255,0.4); font-size: 11px; text-align: center; margin: 4px 0 14px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ss-tw, .ss-shoot, .ss-wave, .ss-wave2, .ss-float, .ss-p-burst, .ss-p-fade, .ss-ring { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+<div id="bg">
+  <div class="ss-moon"></div>
+  <span class="ss-shoot" style="top:11%; left:72%; animation-delay:2s"></span>
+  <span class="ss-shoot" style="top:25%; left:30%; animation-delay:9.5s"></span>
+  <svg class="ss-wave" viewBox="0 0 2400 80" preserveAspectRatio="none">
+    <path d="M0,42 C120,66 260,18 420,40 C580,62 700,18 860,40 C1000,60 1100,26 1200,42 C1320,66 1460,18 1620,40 C1780,62 1900,18 2060,40 C2200,60 2300,26 2400,42 L2400,80 L0,80 Z" fill="rgba(96,165,250,0.16)"/>
+  </svg>
+  <svg class="ss-wave2" viewBox="0 0 2400 100" preserveAspectRatio="none">
+    <path d="M0,50 C150,84 320,24 520,52 C720,80 860,26 1020,52 C1120,68 1170,44 1200,50 C1350,84 1520,24 1720,52 C1920,80 2060,26 2220,52 C2320,68 2370,44 2400,50 L2400,100 L0,100 Z" fill="rgba(52,86,168,0.38)"/>
+  </svg>
+  <div class="ss-deep"></div>
+</div>
+<div id="app"></div>
+<div id="modal"></div>
+<div id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore, collection, doc, setDoc, addDoc, updateDoc, deleteDoc,
+  onSnapshot, query, orderBy, increment, getDocs, writeBatch
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* ─── Firebase ─── */
+const firebaseConfig = {
+  apiKey: "AIzaSyATHiDJmf0g-a1iQymiJRXcBOK7pGisiUU",
+  authDomain: "byeolbada-5d812.firebaseapp.com",
+  projectId: "byeolbada-5d812",
+  storageBucket: "byeolbada-5d812.firebasestorage.app",
+  messagingSenderId: "1033643579957",
+  appId: "1:1033643579957:web:f5766c87cda110e1e86f7c"
+};
+const fbApp = initializeApp(firebaseConfig);
+const auth = getAuth(fbApp);
+const db = getFirestore(fbApp);
+const EMAIL_DOMAIN = "@byeolbada.app";
+
+/* ─── state ─── */
+const state = {
+  view: "loading",          // loading | auth | home | group | rank
+  authMode: "login",
+  authBusy: false,
+  uid: null,
+  userId: null,
+  groups: [],
+  kidsByGroup: {},
+  curGroupId: null,
+  groupTab: "list",         // list | rank
+  creatingGroup: false,
+  editingGroup: null,
+  editingKid: null,
+};
+let groupsUnsub = null;
+const kidsUnsubs = {};
+const pendingStars = {};    // kidId -> { gid, delta, abs, timer }
+
+/* ─── utils ─── */
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const gradeOf = (n) => (n >= 80 ? 5 : n >= 60 ? 4 : n >= 40 ? 3 : n >= 20 ? 2 : 1);
+const THRESH = [0, 20, 40, 60, 80];
+const clamp0 = (n) => Math.max(0, Math.min(99999, n));
+
+function toast(msg) {
+  const t = $("#toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.classList.remove("show"), 2600);
+}
+
+function showConfirm(title, msg, onYes) {
+  const m = $("#modal");
+  m.innerHTML = `
+    <div class="modal-box">
+      <div class="modal-t">${esc(title)}</div>
+      <div class="modal-m">${esc(msg)}</div>
+      <div class="modal-btns">
+        <button class="btn btn-ghost" data-act="modal-no">취소</button>
+        <button class="btn btn-danger" data-act="modal-yes">삭제</button>
+      </div>
+    </div>`;
+  m.classList.add("show");
+  m._yes = onYes;
+}
+$("#modal").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-act]");
+  const m = $("#modal");
+  if (!b) { if (e.target === m) m.classList.remove("show"); return; }
+  if (b.dataset.act === "modal-yes" && m._yes) m._yes();
+  m.classList.remove("show");
+  m._yes = null;
+});
+
+/* ─── svg icons ─── */
+const svgStar = (size, filled) =>
+  `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="${filled ? "#ffd76a" : "none"}"
+     stroke="${filled ? "#ffd76a" : "rgba(255,255,255,0.28)"}" stroke-width="2" stroke-linejoin="round">
+     <path d="M12 2.5l2.95 6.1 6.7.9-4.9 4.68 1.22 6.66L12 17.7l-5.97 3.14 1.22-6.66-4.9-4.68 6.7-.9z"/></svg>`;
+const svgBigStar = (size) =>
+  `<svg class="logo-star" width="${size}" height="${size}" viewBox="0 0 24 24" fill="#ffd76a">
+     <path d="M12 2l3 6.6 7 .9-5.2 4.9 1.4 7L12 17.9 5.8 21.4l1.4-7L2 9.5l7-.9z"/></svg>`;
+const svgSpark = (size) =>
+  `<svg class="logo-spark" width="${size}" height="${size}" viewBox="0 0 24 24" fill="#fff3c4">
+     <path d="M12 3l1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7z"/></svg>`;
+const svgTrophy = (size) =>
+  `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="trophy-glow">
+     <path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/>
+     <path d="M7 6H4v1.5A3.5 3.5 0 0 0 7.5 11M17 6h3v1.5A3.5 3.5 0 0 1 16.5 11"/></svg>`;
+const I = {
+  plus: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`,
+  minus: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M5 12h14"/></svg>`,
+  plusSm: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`,
+  pencil: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg>`,
+  trash: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>`,
+  check: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`,
+  x: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>`,
+  back: `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>`,
+  chev: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>`,
+  logout: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>`,
+  users: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+  starSm: `<svg width="12" height="12" viewBox="0 0 24 24" fill="#ffd76a"><path d="M12 2l3 6.6 7 .9-5.2 4.9 1.4 7L12 17.9 5.8 21.4l1.4-7L2 9.5l7-.9z"/></svg>`,
+  starMd: `<svg width="16" height="16" viewBox="0 0 24 24" fill="#ffd76a"><path d="M12 2l3 6.6 7 .9-5.2 4.9 1.4 7L12 17.9 5.8 21.4l1.4-7L2 9.5l7-.9z"/></svg>`,
+  sparkle: `<svg width="34" height="34" viewBox="0 0 24 24" fill="#ffd76a"><path d="M12 3l1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7zM19 3l.8 2.2L22 6l-2.2.8L19 9l-.8-2.2L16 6l2.2-.8z"/></svg>`,
+};
+
+/* ─── grade badge ─── */
+function gradeBadgeHTML(n) {
+  n = clamp0(n);
+  const g = gradeOf(n);
+  const next = g >= 5 ? null : THRESH[g];
+  const prev = THRESH[g - 1];
+  const prog = next ? Math.min(1, (n - prev) / (next - prev)) : 1;
+  let sts = "";
+  for (let i = 1; i <= 5; i++) sts += svgStar(11, i <= g);
+  return `
+    <div class="gb-row">${sts}<span class="gb-label">${g}성</span></div>
+    <div class="gb-bar"><div class="gb-fill" style="width:${Math.round(prog * 100)}%"></div></div>
+    <div class="gb-next">${next ? `${g + 1}성까지 별빛 ${next - n}개` : "최고 등급 ✦"}</div>`;
+}
+
+/* ─── shown stars (server value + pending local taps) ─── */
+function findKid(kidId) {
+  for (const gid of Object.keys(state.kidsByGroup)) {
+    const k = (state.kidsByGroup[gid] || []).find((x) => x.id === kidId);
+    if (k) return { ...k, gid };
+  }
+  return null;
+}
+function shownStars(kid) {
+  const p = pendingStars[kid.id];
+  if (!p) return clamp0(kid.stars);
+  if (p.abs != null) return clamp0(p.abs);
+  return clamp0(kid.stars + p.delta);
+}
+
+/* ─── templates ─── */
+function logoHTML(size) {
+  return `<span class="logo-wrap ss-float">${svgBigStar(size)}${svgSpark(Math.round(size * 0.42))}</span>`;
+}
+
+function loadingHTML() {
+  return `<div class="center-page">${logoHTML(56)}
+    <div class="muted" style="margin-top:14px; font-size:14px">별바다를 여는 중...</div></div>`;
+}
+
+function authHTML() {
+  const m = state.authMode;
+  return `
+  <div class="center-page">
+    ${logoHTML(72)}
+    <div class="auth-title">별바다</div>
+    <div class="auth-sub">아이들이 모은 별빛을 기록하는 바다</div>
+    <div class="card auth-card">
+      <div class="tabbar">
+        <button class="tab ${m === "login" ? "on" : ""}" data-act="tab-login">로그인</button>
+        <button class="tab ${m === "signup" ? "on" : ""}" data-act="tab-signup">회원가입</button>
+      </div>
+      <input id="fid" class="input" style="margin-bottom:8px" placeholder="아이디 (영문·숫자 2~20자)"
+        autocomplete="username" autocapitalize="none" spellcheck="false">
+      <input id="fpw" class="input" style="margin-bottom:8px" type="password" placeholder="비밀번호 (6자 이상)"
+        autocomplete="${m === "login" ? "current-password" : "new-password"}">
+      ${m === "signup" ? `<input id="fpw2" class="input" style="margin-bottom:8px" type="password"
+        placeholder="비밀번호 확인" autocomplete="new-password">` : ""}
+      <div class="err" id="authErr"></div>
+      <button class="btn btn-gold" id="authBtn" data-act="auth-submit"
+        style="width:100%; padding:13px 0; font-size:16px; font-weight:800">
+        ${m === "login" ? "별바다 입장하기 ✦" : "계정 만들기 ✦"}</button>
+      <div class="hint">${m === "login"
+        ? "처음이신가요? 위에서 회원가입을 눌러주세요"
+        : "함께 쓸 사람들과 아이디·비밀번호를 공유하면 같은 별빛이 보여요"}</div>
+    </div>
+  </div>`;
+}
+
+function headerHTML(title, backAct) {
+  return `
+  <div class="hdr">
+    <div class="row" style="gap:8px; min-width:0">
+      ${backAct
+        ? `<button class="icon-btn" style="margin-left:-8px; color:rgba(255,255,255,0.8)" data-act="${backAct}">${I.back}</button>`
+        : logoHTML(26)}
+      <span class="hdr-title" style="${backAct ? "" : "letter-spacing:.14em"}">${esc(title)}</span>
+    </div>
+    <div class="row" style="gap:6px">
+      <span class="user-chip">${esc(state.userId || "")}</span>
+      <button class="icon-btn" data-act="logout" aria-label="로그아웃">${I.logout}</button>
+    </div>
+  </div>`;
+}
+
+function groupCardHTML(g) {
+  const kids = state.kidsByGroup[g.id] || [];
+  const total = kids.reduce((s, k) => s + shownStars(k), 0);
+  if (state.editingGroup === g.id) {
+    return `
+    <div class="card group-card">
+      <div class="row" style="gap:8px">
+        <input id="editgroup-${g.id}" class="input" style="flex:1; min-width:0; padding:10px 12px; font-size:14px"
+          value="${esc(g.name)}" data-editgroup="${g.id}">
+        <button class="btn btn-gold" style="padding:10px 11px" data-act="save-group" data-gid="${g.id}">${I.check}</button>
+        <button class="btn btn-ghost" style="padding:10px 11px" data-act="cancel-edit">${I.x}</button>
+      </div>
+    </div>`;
+  }
+  return `
+  <div class="card group-card">
+    <div class="row" style="gap:4px">
+      <button style="flex:1; min-width:0; text-align:left" data-act="open-group" data-gid="${g.id}">
+        <div class="group-name">${esc(g.name)}</div>
+        <div class="group-sub">
+          <span>${I.users} ${kids.length}명</span>
+          <span>${I.starSm} 별빛 <b data-gtotal="${g.id}" style="color:#ffe9a3">${total}</b>개</span>
+        </div>
+      </button>
+      <button class="icon-btn" data-act="edit-group" data-gid="${g.id}" aria-label="이름 수정">${I.pencil}</button>
+      <button class="icon-btn" data-act="del-group" data-gid="${g.id}" aria-label="삭제">${I.trash}</button>
+      <button class="icon-btn" style="padding:4px; color:rgba(255,255,255,0.4)" data-act="open-group" data-gid="${g.id}">${I.chev}</button>
+    </div>
+  </div>`;
+}
+
+function homeHTML() {
+  return `
+  ${headerHTML("별바다")}
+  <div class="action-row">
+    <button class="btn btn-gold" data-act="show-create-group">${I.plusSm} 그룹 만들기</button>
+    <button class="btn btn-ghost" data-act="go-rank"><span class="t1">${svgTrophy(17)}</span> 전체 랭킹</button>
+  </div>
+  ${state.creatingGroup ? `
+  <div class="card add-row">
+    <input id="newGroupName" class="input" placeholder="그룹 이름 (예: 1반, 유치부)">
+    <button class="btn btn-gold" data-act="create-group">만들기</button>
+    <button class="btn btn-ghost" style="padding:11px" data-act="cancel-create-group">${I.x}</button>
+  </div>` : ""}
+  ${state.groups.length === 0 && !state.creatingGroup ? `
+  <div class="card empty">
+    ${I.sparkle}
+    <div class="empty-t">아직 그룹이 없어요</div>
+    <div class="empty-s">그룹 만들기를 눌러 첫 별바다를 열어보세요 ✦</div>
+  </div>` : ""}
+  <div>${state.groups.map(groupCardHTML).join("")}</div>
+  <div class="footer">✦ 별바다 · 아이들의 별빛 기록장 ✦</div>`;
+}
+
+function kidCardHTML(kid) {
+  const n = shownStars(kid);
+  const nameArea = state.editingKid === kid.id
+    ? `<div class="row" style="gap:6px">
+         <input id="editkid-${kid.id}" class="input" style="padding:8px 10px; font-size:14px; min-width:0"
+           value="${esc(kid.name)}" data-editkid="${kid.id}">
+         <button class="btn btn-gold" style="padding:8px 9px" data-act="save-kid" data-kid="${kid.id}">${I.check}</button>
+       </div>`
+    : `<div class="kid-name-row">
+         <span class="kid-name">${esc(kid.name)}</span>
+         <button class="icon-btn" style="padding:4px" data-act="edit-kid" data-kid="${kid.id}" aria-label="이름 수정">${I.pencil}</button>
+         <button class="icon-btn" style="padding:4px" data-act="del-kid" data-kid="${kid.id}" aria-label="삭제">${I.trash}</button>
+       </div>`;
+  return `
+  <div class="card kid-card" data-kidcard="${kid.id}">
+    <div class="kid-left">
+      ${nameArea}
+      <div data-badge="${kid.id}">${gradeBadgeHTML(n)}</div>
+    </div>
+    <div class="ctrl">
+      <span class="fxwrap">
+        <button class="bump minus" data-act="bump" data-kid="${kid.id}" data-d="-1" ${n <= 0 ? "disabled" : ""}>${I.minus}</button>
+        <span class="fxlayer"></span>
+      </span>
+      <input class="stars-input" inputmode="numeric" data-stars="${kid.id}" id="stars-${kid.id}" value="${n}"
+        aria-label="${esc(kid.name)} 별빛 개수">
+      <span class="fxwrap">
+        <button class="bump plus" data-act="bump" data-kid="${kid.id}" data-d="1">${I.plus}</button>
+        <span class="fxlayer"></span>
+      </span>
+    </div>
+  </div>`;
+}
+
+function rankRowHTML(rank, name, sub, stars) {
+  const g = gradeOf(clamp0(stars));
+  let gs = "";
+  for (let i = 1; i <= 5; i++) gs += svgStar(9, i <= g);
+  const tClass = rank <= 3 ? `t${rank}` : "";
+  const cClass = rank <= 3 ? `t${rank}c` : "";
+  return `
+  <div class="card rank-card ${cClass}">
+    <div class="rank-no">${rank <= 3 ? `<span class="${tClass}">${svgTrophy(rank === 1 ? 30 : 26)}</span>` : rank}</div>
+    <div class="rank-mid">
+      <div class="rank-name">${esc(name)}</div>
+      ${sub ? `<div class="rank-sub">${esc(sub)}</div>` : ""}
+      <div class="gb-row" style="margin-top:3px">${gs}<span class="gb-label" style="font-size:10px">${g}성</span></div>
+    </div>
+    <div class="rank-stars">${I.starMd}<b>${clamp0(stars)}</b></div>
+  </div>`;
+}
+
+function groupHTML() {
+  const g = state.groups.find((x) => x.id === state.curGroupId);
+  if (!g) return homeHTML();
+  const kids = state.kidsByGroup[g.id] || [];
+  const total = kids.reduce((s, k) => s + shownStars(k), 0);
+  const titleArea = state.editingGroup === g.id
+    ? `<input id="editgroup-${g.id}" class="input" style="flex:1; min-width:0; padding:9px 12px; font-size:15px"
+         value="${esc(g.name)}" data-editgroup="${g.id}">
+       <button class="btn btn-gold" style="padding:9px 10px; flex:none" data-act="save-group" data-gid="${g.id}">${I.check}</button>`
+    : `<span class="g-title">${esc(g.name)}</span>
+       <button class="icon-btn" style="padding:6px" data-act="edit-group" data-gid="${g.id}" aria-label="이름 수정">${I.pencil}</button>`;
+  const listTab = `
+    <div class="card add-row">
+      <input id="newKidName" class="input" placeholder="이름을 입력하세요">
+      <button class="btn btn-gold" data-act="add-kid">${I.plusSm} 추가</button>
+    </div>
+    ${kids.length === 0 ? `
+    <div class="card empty">
+      <div class="empty-t" style="margin-top:0">아직 아무도 없어요</div>
+      <div class="empty-s">위에 이름을 적고 추가를 눌러보세요 ✦</div>
+    </div>` : ""}
+    <div id="kidList">${kids.map(kidCardHTML).join("")}</div>`;
+  const sorted = [...kids].sort((a, b) => shownStars(b) - shownStars(a) || a.name.localeCompare(b.name));
+  const rankTab = kids.length === 0
+    ? `<div class="card empty"><div class="empty-s">기록이 생기면 랭킹이 나타나요 ✦</div></div>`
+    : sorted.map((k, i) => rankRowHTML(i + 1, k.name, null, shownStars(k))).join("");
+  return `
+  <div class="g-hdr">
+    <button class="icon-btn" style="margin-left:-8px; color:rgba(255,255,255,0.8); flex:none" data-act="go-home">${I.back}</button>
+    ${titleArea}
+    <span class="total-chip">${I.starSm} <span data-grouptotal>${total}</span></span>
+  </div>
+  <div class="tabbar" style="margin-bottom:14px">
+    <button class="tab ${state.groupTab === "list" ? "on" : ""}" data-act="tab-list">별빛 기록</button>
+    <button class="tab ${state.groupTab === "rank" ? "on" : ""}" data-act="tab-rank">랭킹 🏆</button>
+  </div>
+  ${state.groupTab === "list" ? listTab : rankTab}
+  <div class="footer">✦ 별빛은 모든 폰에서 실시간으로 함께 반짝여요 ✦</div>`;
+}
+
+function rankViewHTML() {
+  const all = [];
+  for (const g of state.groups)
+    for (const k of state.kidsByGroup[g.id] || []) all.push({ ...k, sub: g.name });
+  all.sort((a, b) => shownStars(b) - shownStars(a) || a.name.localeCompare(b.name));
+  return `
+  ${headerHTML("전체 랭킹", "go-home")}
+  ${all.length === 0
+    ? `<div class="card empty"><div class="empty-s">아직 기록된 별빛이 없어요 ✦</div></div>`
+    : all.map((k, i) => rankRowHTML(i + 1, k.name, k.sub, shownStars(k))).join("")}
+  <div class="footer">✦ 별바다 · 아이들의 별빛 기록장 ✦</div>`;
+}
+
+/* ─── render with focus preservation ─── */
+function snapshotFocus() {
+  const el = document.activeElement;
+  if (!el || !el.id || el.tagName !== "INPUT") return null;
+  return { id: el.id, value: el.value, s: el.selectionStart, e: el.selectionEnd };
+}
+function restoreFocus(keep) {
+  if (!keep) return;
+  const el = document.getElementById(keep.id);
+  if (!el) return;
+  el.value = keep.value;
+  el.focus();
+  try { el.setSelectionRange(keep.s, keep.e); } catch (e) {}
+}
+function render() {
+  const keep = snapshotFocus();
+  const app = $("#app");
+  if (state.view === "loading") app.innerHTML = loadingHTML();
+  else if (state.view === "auth") app.innerHTML = authHTML();
+  else if (state.view === "home") app.innerHTML = homeHTML();
+  else if (state.view === "group") app.innerHTML = groupHTML();
+  else if (state.view === "rank") app.innerHTML = rankViewHTML();
+  restoreFocus(keep);
+}
+
+/* ─── in-place DOM updates (keeps typing focus, smooth realtime) ─── */
+function refreshKidDom(kid) {
+  const n = shownStars(kid);
+  const input = document.getElementById("stars-" + kid.id);
+  if (input && document.activeElement !== input) input.value = n;
+  const badge = document.querySelector(`[data-badge="${kid.id}"]`);
+  if (badge) badge.innerHTML = gradeBadgeHTML(n);
+  const minusBtn = document.querySelector(`[data-kidcard="${kid.id}"] .bump.minus`);
+  if (minusBtn) minusBtn.disabled = n <= 0;
+}
+function updateGroupTotalDom() {
+  const g = state.groups.find((x) => x.id === state.curGroupId);
+  if (!g) return;
+  const kids = state.kidsByGroup[g.id] || [];
+  const total = kids.reduce((s, k) => s + shownStars(k), 0);
+  const el = document.querySelector("[data-grouptotal]");
+  if (el) el.textContent = total;
+}
+function updateHomeTotalsDom(gid) {
+  const kids = state.kidsByGroup[gid] || [];
+  const total = kids.reduce((s, k) => s + shownStars(k), 0);
+  const el = document.querySelector(`[data-gtotal="${gid}"]`);
+  if (el) el.textContent = total;
+}
+
+/* ─── particles ─── */
+function spawnFx(wrap, kind) {
+  const layer = wrap.querySelector(".fxlayer");
+  if (!layer) return;
+  const isPlus = kind === "plus";
+  const frag = document.createDocumentFragment();
+  const made = [];
+  const count = isPlus ? 9 : 7;
+  for (let i = 0; i < count; i++) {
+    const a = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.7;
+    const d = 24 + Math.random() * 20;
+    const p = document.createElement("span");
+    p.className = isPlus ? "ss-p-burst" : "ss-p-fade";
+    p.textContent = "✦";
+    p.style.left = "50%";
+    p.style.top = "50%";
+    p.style.fontSize = 8 + Math.random() * 7 + "px";
+    p.style.setProperty("--dx", Math.round(Math.cos(a) * d) + "px");
+    p.style.setProperty("--dy", Math.round(Math.sin(a) * d) + "px");
+    p.style.animationDelay = Math.random() * 0.07 + "s";
+    frag.appendChild(p); made.push(p);
+  }
+  const ring = document.createElement("span");
+  ring.className = "ss-ring " + (isPlus ? "plus" : "minus");
+  frag.appendChild(ring); made.push(ring);
+  layer.appendChild(frag);
+  setTimeout(() => made.forEach((el) => el.remove()), 840);
+}
+
+/* ─── star count ops (optimistic + debounced write) ─── */
+function pendingFor(kid) {
+  return pendingStars[kid.id] || (pendingStars[kid.id] = { gid: kid.gid, delta: 0, abs: null, timer: null });
+}
+function scheduleFlush(kidId) {
+  const p = pendingStars[kidId];
+  if (!p) return;
+  clearTimeout(p.timer);
+  p.timer = setTimeout(async () => {
+    const mine = pendingStars[kidId];
+    if (!mine) return;
+    delete pendingStars[kidId];
+    try {
+      const ref = doc(db, "users", state.uid, "groups", mine.gid, "kids", kidId);
+      if (mine.abs != null) await updateDoc(ref, { stars: clamp0(mine.abs) });
+      else if (mine.delta !== 0) await updateDoc(ref, { stars: increment(mine.delta) });
+    } catch (e) {
+      console.error(e);
+      toast("저장에 실패했어요. 인터넷 연결을 확인해주세요");
+      const k = findKid(kidId);
+      if (k) { refreshKidDom(k); updateGroupTotalDom(); }
+    }
+  }, 450);
+}
+function bump(kid, delta) {
+  const p = pendingFor(kid);
+  if (p.abs != null) {
+    if (p.abs + delta < 0) return;
+    p.abs = clamp0(p.abs + delta);
+  } else {
+    if (clamp0(kid.stars) + p.delta + delta < 0) return;
+    p.delta += delta;
+  }
+  refreshKidDom(kid);
+  updateGroupTotalDom();
+  scheduleFlush(kid.id);
+}
+function typeStars(kid, raw) {
+  const digits = String(raw).replace(/\D/g, "").slice(0, 5);
+  const v = digits === "" ? 0 : parseInt(digits, 10);
+  const p = pendingFor(kid);
+  p.abs = v; p.delta = 0;
+  const input = document.getElementById("stars-" + kid.id);
+  if (input && input.value !== digits && digits !== "") input.value = digits;
+  const badge = document.querySelector(`[data-badge="${kid.id}"]`);
+  if (badge) badge.innerHTML = gradeBadgeHTML(v);
+  const minusBtn = document.querySelector(`[data-kidcard="${kid.id}"] .bump.minus`);
+  if (minusBtn) minusBtn.disabled = v <= 0;
+  updateGroupTotalDom();
+  scheduleFlush(kid.id);
+}
+
+/* ─── firestore ops ─── */
+async function fs(run, failMsg) {
+  try { await run(); }
+  catch (e) { console.error(e); toast(failMsg || "저장에 실패했어요"); }
+}
+const addGroup = (name) => fs(() =>
+  addDoc(collection(db, "users", state.uid, "groups"), { name, createdAt: Date.now() }), "그룹을 만들지 못했어요");
+const renameGroup = (gid, name) => fs(() =>
+  updateDoc(doc(db, "users", state.uid, "groups", gid), { name }));
+const addKid = (gid, name) => fs(() =>
+  addDoc(collection(db, "users", state.uid, "groups", gid, "kids"), { name, stars: 0, createdAt: Date.now() }));
+const renameKid = (gid, kidId, name) => fs(() =>
+  updateDoc(doc(db, "users", state.uid, "groups", gid, "kids", kidId), { name }));
+const deleteKid = (gid, kidId) => fs(() =>
+  deleteDoc(doc(db, "users", state.uid, "groups", gid, "kids", kidId)));
+const deleteGroup = (gid) => fs(async () => {
+  const snap = await getDocs(collection(db, "users", state.uid, "groups", gid, "kids"));
+  const batch = writeBatch(db);
+  snap.forEach((d) => batch.delete(d.ref));
+  batch.delete(doc(db, "users", state.uid, "groups", gid));
+  await batch.commit();
+}, "그룹을 삭제하지 못했어요");
+
+/* ─── realtime subscriptions ─── */
+function cleanupSubs() {
+  if (groupsUnsub) { groupsUnsub(); groupsUnsub = null; }
+  for (const gid of Object.keys(kidsUnsubs)) { kidsUnsubs[gid](); delete kidsUnsubs[gid]; }
+  state.groups = [];
+  state.kidsByGroup = {};
+}
+function subscribeGroups() {
+  const qy = query(collection(db, "users", state.uid, "groups"), orderBy("createdAt"));
+  groupsUnsub = onSnapshot(qy, (snap) => {
+    state.groups = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    syncKidListeners();
+    if (state.view === "group" && !state.groups.find((g) => g.id === state.curGroupId)) {
+      state.curGroupId = null;
+      state.view = "home";
+    }
+    render();
+  }, (e) => { console.error(e); toast("데이터를 불러오지 못했어요"); });
+}
+function syncKidListeners() {
+  const ids = new Set(state.groups.map((g) => g.id));
+  for (const gid of Object.keys(kidsUnsubs)) {
+    if (!ids.has(gid)) {
+      kidsUnsubs[gid]();
+      delete kidsUnsubs[gid];
+      delete state.kidsByGroup[gid];
+    }
+  }
+  for (const g of state.groups) {
+    if (kidsUnsubs[g.id]) continue;
+    const qy = query(collection(db, "users", state.uid, "groups", g.id, "kids"), orderBy("createdAt"));
+    kidsUnsubs[g.id] = onSnapshot(qy, (snap) => {
+      applyKids(g.id, snap.docs.map((d) => ({ id: d.id, gid: g.id, ...d.data() })));
+    }, (e) => console.error(e));
+  }
+}
+function applyKids(gid, kids) {
+  const prev = state.kidsByGroup[gid] || [];
+  state.kidsByGroup[gid] = kids;
+  const structural = prev.length !== kids.length ||
+    prev.some((p, i) => p.id !== kids[i].id || p.name !== kids[i].name);
+  if (state.view === "group" && state.curGroupId === gid) {
+    if (structural || state.groupTab === "rank") render();
+    else { kids.forEach((k) => refreshKidDom(k)); updateGroupTotalDom(); }
+  } else if (state.view === "home") {
+    if (structural) render(); else updateHomeTotalsDom(gid);
+  } else if (state.view === "rank") {
+    render();
+  }
+}
+
+/* ─── auth ─── */
+function authErrMsg(code) {
+  const m = {
+    "auth/email-already-in-use": "이미 사용 중인 아이디예요",
+    "auth/invalid-credential": "아이디 또는 비밀번호가 맞지 않아요",
+    "auth/user-not-found": "아이디 또는 비밀번호가 맞지 않아요",
+    "auth/wrong-password": "아이디 또는 비밀번호가 맞지 않아요",
+    "auth/invalid-email": "아이디는 영문·숫자 2~20자로 해주세요",
+    "auth/weak-password": "비밀번호는 6자 이상으로 해주세요",
+    "auth/too-many-requests": "시도가 너무 많았어요. 잠시 후 다시 해주세요",
+    "auth/network-request-failed": "인터넷 연결을 확인해주세요",
+  };
+  return m[code] || "문제가 생겼어요. 잠시 후 다시 시도해주세요";
+}
+async function doAuth() {
+  if (state.authBusy) return;
+  const errEl = $("#authErr");
+  errEl.textContent = "";
+  const id = ($("#fid").value || "").trim().toLowerCase();
+  const pw = $("#fpw").value || "";
+  if (!/^[a-z0-9_-]{2,20}$/.test(id)) {
+    errEl.textContent = "아이디는 영문·숫자·_· - 로 2~20자예요 (한글·공백 불가)"; return;
+  }
+  if (pw.length < 6) { errEl.textContent = "비밀번호는 6자 이상으로 해주세요"; return; }
+  if (state.authMode === "signup" && pw !== ($("#fpw2").value || "")) {
+    errEl.textContent = "비밀번호 확인이 일치하지 않아요"; return;
+  }
+  state.authBusy = true;
+  const btn = $("#authBtn");
+  btn.textContent = "확인 중..."; btn.style.opacity = ".6";
+  const email = id + EMAIL_DOMAIN;
+  try {
+    if (state.authMode === "signup") {
+      const cred = await createUserWithEmailAndPassword(auth, email, pw);
+      await setDoc(doc(db, "users", cred.user.uid), { displayId: id, createdAt: Date.now() });
+    } else {
+      await signInWithEmailAndPassword(auth, email, pw);
+    }
+    // onAuthStateChanged가 이어서 처리
+  } catch (e) {
+    console.error(e);
+    state.authBusy = false;
+    render();
+    const el = $("#authErr");
+    if (el) el.textContent = authErrMsg(e && e.code);
+  }
+}
+
+onAuthStateChanged(auth, (user) => {
+  cleanupSubs();
+  state.authBusy = false;
+  if (user) {
+    state.uid = user.uid;
+    state.userId = (user.email || "").split("@")[0];
+    state.view = "home";
+    state.curGroupId = null;
+    render();
+    subscribeGroups();
+  } else {
+    state.uid = null;
+    state.userId = null;
+    state.view = "auth";
+    state.curGroupId = null;
+    render();
+  }
+});
+
+/* ─── event delegation ─── */
+document.getElementById("app").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-act]");
+  if (!b) return;
+  const act = b.dataset.act;
+  const gid = b.dataset.gid;
+  const kidId = b.dataset.kid;
+
+  if (act === "tab-login") { state.authMode = "login"; render(); }
+  else if (act === "tab-signup") { state.authMode = "signup"; render(); }
+  else if (act === "auth-submit") doAuth();
+  else if (act === "logout") signOut(auth);
+
+  else if (act === "show-create-group") { state.creatingGroup = true; render(); $("#newGroupName")?.focus(); }
+  else if (act === "cancel-create-group") { state.creatingGroup = false; render(); }
+  else if (act === "create-group") {
+    const name = ($("#newGroupName")?.value || "").trim() || "새 그룹";
+    state.creatingGroup = false;
+    addGroup(name);
+  }
+  else if (act === "open-group") { state.curGroupId = gid; state.groupTab = "list"; state.editingGroup = null; state.view = "group"; render(); }
+  else if (act === "go-home") { state.view = "home"; state.editingGroup = null; state.editingKid = null; render(); }
+  else if (act === "go-rank") { state.view = "rank"; render(); }
+  else if (act === "edit-group") { state.editingGroup = gid; render(); $("#editgroup-" + gid)?.focus(); }
+  else if (act === "cancel-edit") { state.editingGroup = null; render(); }
+  else if (act === "save-group") {
+    const v = (document.getElementById("editgroup-" + gid)?.value || "").trim();
+    state.editingGroup = null;
+    if (v) renameGroup(gid, v); else render();
+  }
+  else if (act === "del-group") {
+    const g = state.groups.find((x) => x.id === gid);
+    showConfirm("그룹 삭제", `"${g ? g.name : ""}" 그룹과 안의 기록이 모두 사라져요. 삭제할까요?`, () => deleteGroup(gid));
+  }
+  else if (act === "tab-list") { state.groupTab = "list"; render(); }
+  else if (act === "tab-rank") { state.groupTab = "rank"; render(); }
+  else if (act === "add-kid") {
+    const name = ($("#newKidName")?.value || "").trim();
+    if (!name) { $("#newKidName")?.focus(); return; }
+    addKid(state.curGroupId, name);
+    const inp = $("#newKidName");
+    if (inp) { inp.value = ""; inp.focus(); }
+  }
+  else if (act === "edit-kid") { state.editingKid = kidId; render(); $("#editkid-" + kidId)?.focus(); }
+  else if (act === "save-kid") {
+    const v = (document.getElementById("editkid-" + kidId)?.value || "").trim();
+    const k = findKid(kidId);
+    state.editingKid = null;
+    if (v && k) renameKid(k.gid, kidId, v); else render();
+  }
+  else if (act === "del-kid") {
+    const k = findKid(kidId);
+    if (!k) return;
+    showConfirm("삭제", `${k.name} 친구의 기록을 삭제할까요?`, () => deleteKid(k.gid, kidId));
+  }
+  else if (act === "bump") {
+    const k = findKid(kidId);
+    if (!k) return;
+    const delta = parseInt(b.dataset.d, 10);
+    if (delta < 0 && shownStars(k) <= 0) return;
+    spawnFx(b.closest(".fxwrap"), delta > 0 ? "plus" : "minus");
+    bump(k, delta);
+  }
+});
+
+document.getElementById("app").addEventListener("input", (e) => {
+  const t = e.target;
+  if (t.matches("input[data-stars]")) {
+    const k = findKid(t.dataset.stars);
+    if (k) typeStars(k, t.value);
+  }
+});
+
+document.getElementById("app").addEventListener("focusout", (e) => {
+  const t = e.target;
+  if (t.matches && t.matches("input[data-stars]")) {
+    const k = findKid(t.dataset.stars);
+    if (k) t.value = shownStars(k);
+  }
+});
+
+document.getElementById("app").addEventListener("keydown", (e) => {
+  if (e.key !== "Enter") return;
+  const t = e.target;
+  if (!t.matches || !t.matches("input")) return;
+  if (t.id === "fid" || t.id === "fpw" || t.id === "fpw2") doAuth();
+  else if (t.id === "newGroupName") {
+    const name = (t.value || "").trim() || "새 그룹";
+    state.creatingGroup = false;
+    addGroup(name);
+  }
+  else if (t.id === "newKidName") {
+    const name = (t.value || "").trim();
+    if (name) { addKid(state.curGroupId, name); t.value = ""; }
+  }
+  else if (t.dataset.editgroup) {
+    const gid = t.dataset.editgroup;
+    const v = (t.value || "").trim();
+    state.editingGroup = null;
+    if (v) renameGroup(gid, v); else render();
+  }
+  else if (t.dataset.editkid) {
+    const kidId = t.dataset.editkid;
+    const v = (t.value || "").trim();
+    const k = findKid(kidId);
+    state.editingKid = null;
+    if (v && k) renameKid(k.gid, kidId, v); else render();
+  }
+  else if (t.matches("input[data-stars]")) t.blur();
+});
+
+/* ─── background stars ─── */
+(function starfield() {
+  const bg = document.getElementById("bg");
+  const frag = document.createDocumentFragment();
+  for (let i = 0; i < 85; i++) {
+    const s = document.createElement("span");
+    s.className = "ss-tw";
+    const size = Math.random() * 2.2 + 0.9;
+    s.style.left = Math.random() * 100 + "%";
+    s.style.top = Math.random() * 70 + "%";
+    s.style.width = size + "px";
+    s.style.height = size + "px";
+    s.style.animationDelay = Math.random() * 5 + "s";
+    s.style.animationDuration = 2.2 + Math.random() * 3.6 + "s";
+    frag.appendChild(s);
+  }
+  bg.appendChild(frag);
+})();
+
+/* ─── service worker (홈 화면 설치용) ─── */
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("./sw.js").catch(() => {});
+}
+
+render();
+</script>
+</body>
+</html>
